@@ -76,7 +76,8 @@ export function MetricsGrid({ timeRange }: MetricsGridProps) {
       acc[hour] = (acc[hour] || 0) + 1
       return acc
     }, {} as Record<number, number>)
-    const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+    const peakHourEntry = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0]
+    const peakHour = peakHourEntry ? Number(peakHourEntry[0]) : undefined
     const peakHourFormatted = peakHour !== undefined
       ? `${peakHour % 12 || 12}:00 ${peakHour >= 12 ? "PM" : "AM"}`
       : "N/A"

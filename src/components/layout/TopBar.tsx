@@ -35,6 +35,7 @@ interface TopBarProps {
     email?: string
     display_name?: string
     avatar_url?: string
+    wallet_address?: string
   }
 }
 

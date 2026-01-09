@@ -31,8 +31,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get email or wallet address from Privy user
-    const email = privyUser.email?.address || null
+    // Get email from all possible sources
+    // Priority: OAuth accounts (Google/GitHub) > primary email > linked accounts
+    let email: string | null = null
+    
+    // First check Google OAuth account (highest priority for Google login)
+    if (privyUser.google?.email) {
+      email = privyUser.google.email
+    }
+    // Check GitHub OAuth account
+    else if (privyUser.github?.email) {
+      email = privyUser.github.email
+    }
+    // Check primary email field (for email/password login or if OAuth didn't provide email)
+    else if (privyUser.email?.address) {
+      email = privyUser.email.address
+    }
+    // Check linked accounts array for any email
+    else if (privyUser.linkedAccounts && Array.isArray(privyUser.linkedAccounts)) {
+      // First check for OAuth accounts in linked accounts
+      const oauthAccount = privyUser.linkedAccounts.find(
+        (account: any) => (account.type === 'google' || account.type === 'github') && account.email
+      )
+      if (oauthAccount?.email) {
+        email = oauthAccount.email
+      } else {
+        // Fallback to email account type
+        const emailAccount = privyUser.linkedAccounts.find(
+          (account: any) => account.type === 'email' && account.address
+        )
+        if (emailAccount?.address) {
+          email = emailAccount.address
+        }
+      }
+    }
+    
+    // Log for debugging (without exposing full user object)
+    if (!email) {
+      console.warn('No email found in Privy user object. Available fields:', {
+        hasEmail: !!privyUser.email,
+        hasGoogle: !!privyUser.google,
+        hasGithub: !!privyUser.github,
+        hasLinkedAccounts: !!privyUser.linkedAccounts,
+        linkedAccountsCount: privyUser.linkedAccounts?.length || 0,
+      })
+    }
+    
     const walletAddress = privyUser.wallet?.address || null
 
     if (!email && !walletAddress) {
@@ -68,11 +112,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Update existing user's email if it's missing or is a placeholder
+    if (existingUser && email && (!existingUser.email || existingUser.email.endsWith('@wallet.solixdb'))) {
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({ email })
+        .eq('id', existingUser.id)
+        .select('id, email, display_name, avatar_url, plan, wallet_address')
+        .single()
+      
+      if (!updateError && updatedUser) {
+        existingUser = updatedUser
+      } else if (updateError) {
+        console.error('Error updating user email:', updateError)
+      }
+    }
+
     if (!existingUser) {
       // Create new user
       const displayName =
         privyUser.name ||
-        privyUser.email?.address?.split('@')[0] ||
+        (email ? email.split('@')[0] : null) ||
         (walletAddress
           ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
           : 'User')
