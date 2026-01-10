@@ -63,7 +63,7 @@ export class APIClient {
     query: string,
     format: 'json' | 'csv' = 'json',
     privyUser: any
-  ): Promise<{ data: any[]; count: number; query: string }> {
+  ): Promise<{ data: any[] | string; count: number; query: string }> {
     const apiKey = await this.getAPIKey(privyUser)
 
     const response = await fetch(`${API_URL}/v1/query`, {
