@@ -8,6 +8,7 @@ import { TopBar } from "@/components/layout/TopBar"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { Toaster } from "@/components/ui/sonner"
 import { syncPrivyUser, getCurrentUser } from "@/lib/auth"
+import { APIKeyGeneratedModal } from "@/components/keys/APIKeyGeneratedModal"
 
 export default function DashboardLayout({
   children,
@@ -18,6 +19,8 @@ export default function DashboardLayout({
   const router = useRouter()
   const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [generatedAPIKey, setGeneratedAPIKey] = useState<string | null>(null)
+  const [showAPIKeyModal, setShowAPIKeyModal] = useState(false)
 
   useEffect(() => {
     if (!ready) return
@@ -34,6 +37,16 @@ export default function DashboardLayout({
         const syncedUser = await syncPrivyUser(privyUser)
         if (syncedUser) {
           setUserProfile(syncedUser)
+          
+          // Check if a new API key was generated
+          if (syncedUser.apiKeyGenerated && syncedUser.apiKey) {
+            // Check if user has already seen their key
+            const hasSeenKey = localStorage.getItem('apiKeySeen')
+            if (!hasSeenKey) {
+              setGeneratedAPIKey(syncedUser.apiKey)
+              setShowAPIKeyModal(true)
+            }
+          }
         }
       } catch (error) {
         console.error('Error syncing user:', error)
@@ -68,6 +81,13 @@ export default function DashboardLayout({
         <MobileNav />
       </div>
       <Toaster />
+      {generatedAPIKey && (
+        <APIKeyGeneratedModal
+          open={showAPIKeyModal}
+          onOpenChange={setShowAPIKeyModal}
+          apiKey={generatedAPIKey}
+        />
+      )}
     </div>
   )
 }

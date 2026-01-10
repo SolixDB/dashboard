@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
   key_hash TEXT NOT NULL, -- SHA-256 hash of actual key
   key_prefix TEXT NOT NULL DEFAULT 'slxdb_live_',
   key_suffix TEXT NOT NULL, -- last 4 chars for display
+  encrypted_key TEXT, -- Encrypted version of the key (optional, for retrieval)
   name TEXT DEFAULT 'Default Key',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_used_at TIMESTAMPTZ,

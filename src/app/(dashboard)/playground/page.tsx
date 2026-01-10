@@ -16,6 +16,7 @@ export default function PlaygroundPage() {
   const { authenticated, ready, user: privyUser } = usePrivy()
   const router = useRouter()
   const [apiKeyPrefix, setApiKeyPrefix] = useState("")
+  const [userId, setUserId] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function PlaygroundPage() {
       try {
         const syncedUser = await syncPrivyUser(privyUser)
         if (syncedUser?.id) {
+          setUserId(syncedUser.id)
           const { data: apiKey } = await supabase
             .from("api_keys")
             .select("key_prefix, key_suffix")
@@ -67,7 +69,7 @@ export default function PlaygroundPage() {
         </p>
       </div>
 
-      <APIPlayground apiKeyPrefix={apiKeyPrefix} />
+      <APIPlayground apiKeyPrefix={apiKeyPrefix} userId={userId} />
     </div>
   )
 }

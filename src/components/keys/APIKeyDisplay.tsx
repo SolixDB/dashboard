@@ -19,6 +19,7 @@ interface APIKey {
   created_at: string
   last_used_at: string | null
   is_active: boolean
+  fullKey?: string
 }
 
 interface APIKeyDisplayProps {
@@ -31,13 +32,12 @@ export function APIKeyDisplay({ apiKey }: APIKeyDisplayProps) {
   const [keyName, setKeyName] = useState(apiKey.name)
   const [showRegenerateModal, setShowRegenerateModal] = useState(false)
 
-  const keyDisplay = `${apiKey.key_prefix}...${apiKey.key_suffix}`
+  const keyDisplay = apiKey.fullKey || `${apiKey.key_prefix}...${apiKey.key_suffix}`
 
   const handleCopy = async () => {
-    // In production, fetch the full key from a secure endpoint
-    // For now, we'll just copy the display format
     try {
-      await navigator.clipboard.writeText(keyDisplay)
+      const textToCopy = apiKey.fullKey || keyDisplay
+      await navigator.clipboard.writeText(textToCopy)
       setCopied(true)
       toast.success("API key copied to clipboard")
       setTimeout(() => setCopied(false), 2000)
@@ -119,39 +119,55 @@ export function APIKeyDisplay({ apiKey }: APIKeyDisplayProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 rounded-lg border border-border bg-muted px-4 py-3 font-mono text-sm">
-                {keyDisplay}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">API Key</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 rounded-lg border-2 border-primary bg-muted px-4 py-3 font-mono text-sm break-all">
+                  {keyDisplay}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopy}
+                  className="shrink-0"
+                >
+                  <AnimatePresence mode="wait">
+                    {copied ? (
+                      <motion.div
+                        key="check"
+                        initial={animations.checkmark.initial}
+                        animate={animations.checkmark.animate}
+                        transition={animations.checkmark.transition}
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="copy"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopy}
-                className="shrink-0"
-              >
-                <AnimatePresence mode="wait">
-                  {copied ? (
-                    <motion.div
-                      key="check"
-                      initial={animations.checkmark.initial}
-                      animate={animations.checkmark.animate}
-                      transition={animations.checkmark.transition}
-                    >
-                      <Check className="h-4 w-4 text-green-500" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="copy"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Button>
             </div>
+            {apiKey.fullKey && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Usage Example</label>
+                <div className="rounded-lg border border-border bg-muted p-3">
+                  <code className="text-xs font-mono break-all">
+                    https://api.solixdb.xyz?API_KEY={apiKey.fullKey}
+                  </code>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Or use header: <code className="px-1 py-0.5 bg-muted rounded text-xs">x-api-key: {apiKey.fullKey}</code>
+                </p>
+              </div>
+            )}
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>Status: Active</span>
             </div>

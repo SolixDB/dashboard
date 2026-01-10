@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
-import { generateAPIKey, hashAPIKey } from '@/lib/api-keys'
+import { generateAPIKey, hashAPIKey, encryptAPIKey } from '@/lib/api-keys'
 
 export async function POST(request: NextRequest) {
   try {
@@ -179,6 +179,18 @@ export async function POST(request: NextRequest) {
       const keyHash = await hashAPIKey(apiKey)
       const keySuffix = apiKey.slice(-4)
 
+      // Encrypt the key for storage (optional - for later retrieval)
+      // Use a master encryption key from environment variable
+      const masterKey = process.env.API_KEY_ENCRYPTION_KEY
+      let encryptedKey: string | null = null
+      
+      if (masterKey) {
+        // Simple encryption using AES (in production, use a proper encryption library)
+        // For now, we'll store it encrypted, but for MVP we can return it in the response
+        // and let the client store it temporarily
+        encryptedKey = await encryptAPIKey(apiKey, masterKey)
+      }
+
       await supabase.from('api_keys').insert({
         user_id: existingUser.id,
         key_hash: keyHash,
@@ -186,6 +198,7 @@ export async function POST(request: NextRequest) {
         key_suffix: keySuffix,
         name: 'Default Key',
         is_active: true,
+        ...(encryptedKey && { encrypted_key: encryptedKey }),
       })
 
       // Initialize monthly credits - get from plan configuration
@@ -202,6 +215,13 @@ export async function POST(request: NextRequest) {
         plan: existingUser.plan || 'free',
         total_credits: planCredits,
         used_credits: 0,
+      })
+
+      // Return the plaintext key ONLY for new users (this is the only time they'll see it)
+      return NextResponse.json({
+        ...existingUser,
+        apiKey: apiKey, // Include plaintext key in response for new users only
+        apiKeyGenerated: true,
       })
     }
 

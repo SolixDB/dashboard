@@ -34,14 +34,39 @@ export default function APIKeysPage() {
       try {
         const syncedUser = await syncPrivyUser(privyUser)
         if (syncedUser?.id) {
-          const { data } = await supabase
+          // First get the key metadata from Supabase
+          const { data: keyData } = await supabase
             .from("api_keys")
             .select("*")
             .eq("user_id", syncedUser.id)
             .eq("is_active", true)
             .single()
           
-          setApiKey(data)
+          if (keyData) {
+            // Try to get the full key from the secure endpoint
+            try {
+              const response = await fetch('/api/auth/get-api-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: syncedUser.id }),
+              })
+              
+              if (response.ok) {
+                const result = await response.json()
+                // If we got the full key, add it to the key data
+                if (result.apiKey) {
+                  setApiKey({ ...keyData, fullKey: result.apiKey })
+                } else {
+                  setApiKey(keyData)
+                }
+              } else {
+                setApiKey(keyData)
+              }
+            } catch (error) {
+              console.error('Error fetching full API key:', error)
+              setApiKey(keyData)
+            }
+          }
         }
       } catch (error) {
         console.error('Error loading API key:', error)

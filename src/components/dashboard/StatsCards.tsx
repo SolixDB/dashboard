@@ -75,9 +75,17 @@ export function StatsCards() {
   })
 
   const stats = useMemo(() => {
-    const credits = billing?.credits || { total_credits: 1000, used_credits: 0 }
-    const remaining = credits.total_credits - credits.used_credits
-    const progress = credits.total_credits > 0 ? (credits.used_credits / credits.total_credits) * 100 : 0
+    // Fetch credits from billing data
+    const totalCredits = billing?.credits?.total_credits || 0
+    const usedCredits = billing?.credits?.used_credits || 0
+    const remaining = totalCredits - usedCredits
+    
+    // Display format: (total - used_credits) / total
+    const creditsDisplay = totalCredits > 0 
+      ? `${remaining.toLocaleString()} / ${totalCredits.toLocaleString()}`
+      : "0 / 0"
+    
+    const progress = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0
 
     const todayCalls = todayUsage?.length || 0
     const yesterdayCalls = yesterdayUsage?.length || 0
@@ -103,7 +111,7 @@ export function StatsCards() {
     return [
       {
         title: "Credits Remaining",
-        value: `${remaining.toLocaleString()} / ${credits.total_credits.toLocaleString()}`,
+        value: creditsDisplay,
         progress: 100 - progress,
         icon: Zap,
         color: "from-yellow-500 to-orange-500",

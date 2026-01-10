@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Play, Copy, Download, Loader2 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -14,22 +12,33 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { animations } from "@/config/animation.config"
+import { motion } from "framer-motion"
+import { Copy, Loader2, Play } from "lucide-react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { ExampleQueries } from "./ExampleQueries"
 
 interface APIPlaygroundProps {
   apiKeyPrefix: string
+  userId?: string
 }
 
-// Only SQL endpoint - POST /api/v1/query
+// API endpoints
 const endpoints = [
   {
-    value: "POST /api/v1/query",
+    value: "POST /v1/query",
     method: "POST",
-    url: "https://api.solixdb.xyz/api/v1/query",
+    url: "https://api.solixdb.xyz/v1/query",
     description: "Execute a read-only SQL query (SELECT only)",
+    type: "sql" as const,
+  },
+  {
+    value: "POST /v1/rpc",
+    method: "POST",
+    url: "https://api.solixdb.xyz/v1/rpc",
+    description: "Execute a JSON-RPC 2.0 method call",
+    type: "rpc" as const,
   },
 ]
 
@@ -40,11 +49,13 @@ interface Response {
   creditsUsed: number
 }
 
-export function APIPlayground({ apiKeyPrefix }: APIPlaygroundProps) {
+export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
   const [selectedEndpoint, setSelectedEndpoint] = useState(endpoints[0].value)
   const [requestBody, setRequestBody] = useState("")
   const [response, setResponse] = useState<Response | null>(null)
   const [loading, setLoading] = useState(false)
+  const [apiKey, setApiKey] = useState("")
+  const [useManualKey, setUseManualKey] = useState(false)
 
   const currentEndpoint = endpoints.find((e) => e.value === selectedEndpoint)
 
@@ -55,12 +66,63 @@ export function APIPlayground({ apiKeyPrefix }: APIPlaygroundProps) {
     const startTime = Date.now()
 
     try {
+      // Get API key - use manual entry if provided, otherwise try to fetch
+      let keyToUse = apiKey
+      
+      if (!useManualKey || !keyToUse) {
+        // Try to fetch full key from secure endpoint (if userId is available)
+        if (userId) {
+          try {
+            const keyResponse = await fetch('/api/auth/get-api-key', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId }),
+            })
+            
+            if (keyResponse.ok) {
+              const keyData = await keyResponse.json()
+              // If the endpoint returns a full key (future implementation), use it
+              if (keyData.apiKey) {
+                keyToUse = keyData.apiKey
+              } else {
+                // Keys are hashed, so we can't retrieve the full key
+                // Prompt user to enter manually
+                keyToUse = apiKeyPrefix
+                if (!useManualKey) {
+                  toast.warning("API keys are stored securely and cannot be retrieved. Please enter your full API key manually.")
+                  setUseManualKey(true)
+                }
+              }
+            } else {
+              keyToUse = apiKeyPrefix
+              toast.warning("Could not fetch API key. Please enter your full API key manually.")
+            }
+          } catch (keyError) {
+            keyToUse = apiKeyPrefix
+            toast.warning("Could not fetch API key. Please enter your full API key manually.")
+          }
+        } else {
+          // No userId, use prefix and prompt for manual entry
+          keyToUse = apiKeyPrefix
+          if (!useManualKey) {
+            toast.warning("Please enter your full API key manually.")
+            setUseManualKey(true)
+          }
+        }
+      }
+
+      if (!keyToUse) {
+        toast.error("API key is required. Please enter your full API key.")
+        setLoading(false)
+        return
+      }
+
       const url = currentEndpoint.url
       const options: RequestInit = {
         method: currentEndpoint.method,
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": apiKeyPrefix, // In production, fetch full key securely
+          "x-api-key": keyToUse,
         },
       }
 
@@ -78,14 +140,22 @@ export function APIPlayground({ apiKeyPrefix }: APIPlaygroundProps) {
       const data = await res.json()
       const endTime = Date.now()
 
+      // Extract rate limit info from headers
+      const rateLimitRemaining = res.headers.get('X-RateLimit-Remaining')
+      const rateLimitPlan = res.headers.get('X-RateLimit-Plan')
+
       setResponse({
         status: res.status,
         data,
         time: endTime - startTime,
-        creditsUsed: 1, // TODO: Get from response headers
+        creditsUsed: 1, // TODO: Get from response headers or calculate
       })
 
-      toast.success("Request completed successfully")
+      if (res.status >= 200 && res.status < 300) {
+        toast.success("Request completed successfully")
+      } else {
+        toast.error(`Request failed: ${data.error?.message || data.message || 'Unknown error'}`)
+      }
     } catch (error: any) {
       toast.error(`Request failed: ${error.message}`)
       setResponse({
@@ -102,10 +172,11 @@ export function APIPlayground({ apiKeyPrefix }: APIPlaygroundProps) {
   const handleCopyCurl = () => {
     if (!currentEndpoint) return
 
+    const keyToUse = useManualKey && apiKey ? apiKey : apiKeyPrefix
     const curlCommand = `curl -X ${currentEndpoint.method} \\
   "${currentEndpoint.url}" \\
   -H "Content-Type: application/json" \\
-  -H "x-api-key: ${apiKeyPrefix}"${
+  -H "x-api-key: ${keyToUse}"${
       currentEndpoint.method === "POST" && requestBody
         ? ` \\
   -d '${requestBody}'`
@@ -116,8 +187,15 @@ export function APIPlayground({ apiKeyPrefix }: APIPlaygroundProps) {
     toast.success("cURL command copied to clipboard")
   }
 
-  const handleLoadExample = (example: { query: string }) => {
+  const handleLoadExample = (example: { query: string; type?: "sql" | "rpc" }) => {
     setRequestBody(example.query)
+    // Auto-select the correct endpoint if example has a type
+    if (example.type) {
+      const matchingEndpoint = endpoints.find(e => e.type === example.type)
+      if (matchingEndpoint) {
+        setSelectedEndpoint(matchingEndpoint.value)
+      }
+    }
   }
 
   return (
@@ -151,15 +229,56 @@ export function APIPlayground({ apiKeyPrefix }: APIPlaygroundProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {currentEndpoint && (
+                <p className="text-xs text-muted-foreground">
+                  {currentEndpoint.description}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>API Key</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUseManualKey(!useManualKey)}
+                  className="h-auto p-0 text-xs"
+                >
+                  {useManualKey ? "Use auto-fetch" : "Enter manually"}
+                </Button>
+              </div>
+              {useManualKey ? (
+                <Textarea
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Enter your full API key (slxdb_live_...)"
+                  className="font-mono text-sm min-h-[60px]"
+                />
+              ) : (
+                <div className="rounded-lg border border-border bg-muted p-2 text-sm font-mono">
+                  {apiKeyPrefix}... (auto-fetched)
+                </div>
+              )}
             </div>
 
             {currentEndpoint?.method === "POST" && (
               <div className="space-y-2">
-                <Label>Request Body (JSON)</Label>
+                <Label>
+                  Request Body (JSON)
+                  {currentEndpoint.type === "sql" && " - SQL Query"}
+                  {currentEndpoint.type === "rpc" && " - JSON-RPC"}
+                </Label>
                 <Textarea
                   value={requestBody}
                   onChange={(e) => setRequestBody(e.target.value)}
-                  placeholder='{"query": "..."}'
+                  placeholder={
+                    currentEndpoint.type === "sql"
+                      ? '{"query": "SELECT * FROM transactions LIMIT 10", "format": "json"}'
+                      : currentEndpoint.type === "rpc"
+                      ? '{"jsonrpc": "2.0", "id": 1, "method": "getProtocols", "params": []}'
+                      : '{"query": "..."}'
+                  }
                   className="font-mono text-sm min-h-[200px]"
                 />
               </div>
