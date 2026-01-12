@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -14,7 +14,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { animations } from "@/config/animation.config"
 import { motion } from "framer-motion"
-import { Copy, Loader2, Play } from "lucide-react"
+import { Clock, Copy, Loader2, Play, Zap } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { ExampleQueries } from "./ExampleQueries"
@@ -24,7 +24,6 @@ interface APIPlaygroundProps {
   userId?: string
 }
 
-// API endpoints
 const endpoints = [
   {
     value: "POST /v1/query",
@@ -54,8 +53,6 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
   const [requestBody, setRequestBody] = useState("")
   const [response, setResponse] = useState<Response | null>(null)
   const [loading, setLoading] = useState(false)
-  const [apiKey, setApiKey] = useState("")
-  const [useManualKey, setUseManualKey] = useState(false)
 
   const currentEndpoint = endpoints.find((e) => e.value === selectedEndpoint)
 
@@ -66,53 +63,29 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
     const startTime = Date.now()
 
     try {
-      // Get API key - use manual entry if provided, otherwise try to fetch
-      let keyToUse = apiKey
-      
-      if (!useManualKey || !keyToUse) {
-        // Try to fetch full key from secure endpoint (if userId is available)
-        if (userId) {
-          try {
-            const keyResponse = await fetch('/api/auth/get-api-key', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId }),
-            })
-            
-            if (keyResponse.ok) {
-              const keyData = await keyResponse.json()
-              // If the endpoint returns a full key (future implementation), use it
-              if (keyData.apiKey) {
-                keyToUse = keyData.apiKey
-              } else {
-                // Keys are hashed, so we can't retrieve the full key
-                // Prompt user to enter manually
-                keyToUse = apiKeyPrefix
-                if (!useManualKey) {
-                  toast.warning("API keys are stored securely and cannot be retrieved. Please enter your full API key manually.")
-                  setUseManualKey(true)
-                }
-              }
-            } else {
-              keyToUse = apiKeyPrefix
-              toast.warning("Could not fetch API key. Please enter your full API key manually.")
+      let keyToUse = apiKeyPrefix
+
+      if (userId) {
+        try {
+          const keyResponse = await fetch('/api/auth/get-api-key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+          })
+
+          if (keyResponse.ok) {
+            const keyData = await keyResponse.json()
+            if (keyData.apiKey) {
+              keyToUse = keyData.apiKey
             }
-          } catch (keyError) {
-            keyToUse = apiKeyPrefix
-            toast.warning("Could not fetch API key. Please enter your full API key manually.")
           }
-        } else {
-          // No userId, use prefix and prompt for manual entry
-          keyToUse = apiKeyPrefix
-          if (!useManualKey) {
-            toast.warning("Please enter your full API key manually.")
-            setUseManualKey(true)
-          }
+        } catch (keyError) {
+          // Use prefix as fallback
         }
       }
 
       if (!keyToUse) {
-        toast.error("API key is required. Please enter your full API key.")
+        toast.error("API key is required.")
         setLoading(false)
         return
       }
@@ -140,15 +113,11 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
       const data = await res.json()
       const endTime = Date.now()
 
-      // Extract rate limit info from headers
-      const rateLimitRemaining = res.headers.get('X-RateLimit-Remaining')
-      const rateLimitPlan = res.headers.get('X-RateLimit-Plan')
-
       setResponse({
         status: res.status,
         data,
         time: endTime - startTime,
-        creditsUsed: 1, // TODO: Get from response headers or calculate
+        creditsUsed: 1,
       })
 
       if (res.status >= 200 && res.status < 300) {
@@ -172,16 +141,14 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
   const handleCopyCurl = () => {
     if (!currentEndpoint) return
 
-    const keyToUse = useManualKey && apiKey ? apiKey : apiKeyPrefix
     const curlCommand = `curl -X ${currentEndpoint.method} \\
   "${currentEndpoint.url}" \\
   -H "Content-Type: application/json" \\
-  -H "x-api-key: ${keyToUse}"${
-      currentEndpoint.method === "POST" && requestBody
+  -H "x-api-key: ${apiKeyPrefix}"${currentEndpoint.method === "POST" && requestBody
         ? ` \\
   -d '${requestBody}'`
         : ""
-    }`
+      }`
 
     navigator.clipboard.writeText(curlCommand)
     toast.success("cURL command copied to clipboard")
@@ -189,13 +156,24 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
 
   const handleLoadExample = (example: { query: string; type?: "sql" | "rpc" }) => {
     setRequestBody(example.query)
-    // Auto-select the correct endpoint if example has a type
     if (example.type) {
       const matchingEndpoint = endpoints.find(e => e.type === example.type)
       if (matchingEndpoint) {
         setSelectedEndpoint(matchingEndpoint.value)
       }
     }
+  }
+
+  const getStatusColor = (status: number) => {
+    if (status >= 200 && status < 300) return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+    if (status >= 400 && status < 500) return "bg-amber-500/10 text-amber-500 border-amber-500/20"
+    return "bg-red-500/10 text-red-500 border-red-500/20"
+  }
+
+  const getStatusBadgeVariant = (status: number) => {
+    if (status >= 200 && status < 300) return "success"
+    if (status >= 400 && status < 500) return "warning"
+    return "error"
   }
 
   return (
@@ -205,107 +183,108 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
         initial={animations.fadeIn.initial}
         animate={animations.fadeIn.animate}
         transition={animations.fadeIn.transition}
+        className="flex flex-col"
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Request</CardTitle>
-            <CardDescription>Configure and send API requests</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Endpoint</Label>
+        <Card className="flex-1 overflow-hidden border-border/50 bg-gradient-to-b from-card to-card/80">
+          {/* Panel Header */}
+          <div className="relative border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div>
+                <h3 className="font-semibold text-foreground">Request Builder</h3>
+                <p className="text-sm text-muted-foreground">Configure and send API requests</p>
+              </div>
+            </div>
+          </div>
+
+          <CardContent className="space-y-6 p-6">
+            {/* Endpoint Selection */}
+            <div className="space-y-3 flex flex-col gap-1">
+              <Label className="text-sm font-medium ">Endpoint</Label>
               <Select value={selectedEndpoint} onValueChange={setSelectedEndpoint}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 border-border/50 bg-muted/30 transition-colors hover:bg-muted/50 focus:ring-primary/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {endpoints.map((endpoint) => (
-                    <SelectItem key={endpoint.value} value={endpoint.value}>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{endpoint.method}</Badge>
-                        <span>{endpoint.value}</span>
+                    <SelectItem
+                      key={endpoint.value}
+                      value={endpoint.value}
+                      className="py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant="outline"
+                          className="bg-primary/10 text-primary border-primary/20 font-mono text-xs px-2"
+                        >
+                          {endpoint.method}
+                        </Badge>
+                        <span className="font-medium">{endpoint.value}</span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {currentEndpoint && (
-                <p className="text-xs text-muted-foreground">
+                <p className="flex items-center gap-2 text-xs text-muted-foreground pl-1">
                   {currentEndpoint.description}
                 </p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>API Key</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setUseManualKey(!useManualKey)}
-                  className="h-auto p-0 text-xs"
-                >
-                  {useManualKey ? "Use auto-fetch" : "Enter manually"}
-                </Button>
-              </div>
-              {useManualKey ? (
-                <Textarea
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your full API key (slxdb_live_...)"
-                  className="font-mono text-sm min-h-[60px]"
-                />
-              ) : (
-                <div className="rounded-lg border border-border bg-muted p-2 text-sm font-mono">
-                  {apiKeyPrefix}... (auto-fetched)
-                </div>
-              )}
-            </div>
-
+            {/* Request Body */}
             {currentEndpoint?.method === "POST" && (
-              <div className="space-y-2">
-                <Label>
-                  Request Body (JSON)
-                  {currentEndpoint.type === "sql" && " - SQL Query"}
-                  {currentEndpoint.type === "rpc" && " - JSON-RPC"}
-                </Label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-sm font-medium">
+                    Request Body
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {currentEndpoint.type === "sql" && "(SQL Query)"}
+                      {currentEndpoint.type === "rpc" && "(JSON-RPC)"}
+                    </span>
+                  </Label>
+                  <ExampleQueries onLoadExample={handleLoadExample} />
+                </div>
                 <Textarea
                   value={requestBody}
                   onChange={(e) => setRequestBody(e.target.value)}
                   placeholder={
                     currentEndpoint.type === "sql"
-                      ? '{"query": "SELECT * FROM transactions LIMIT 10", "format": "json"}'
+                      ? '{\n  "query": "SELECT * FROM transactions LIMIT 10",\n  "format": "json"\n}'
                       : currentEndpoint.type === "rpc"
-                      ? '{"jsonrpc": "2.0", "id": 1, "method": "getProtocols", "params": []}'
-                      : '{"query": "..."}'
+                        ? '{\n  "jsonrpc": "2.0",\n  "id": 1,\n  "method": "getProtocols",\n  "params": []\n}'
+                        : '{"query": "..."}'
                   }
-                  className="font-mono text-sm min-h-[200px]"
+                  className="min-h-[180px] resize-none border-border/50 bg-muted/30 font-mono text-sm transition-colors focus:bg-muted/50 focus:ring-primary/20"
                 />
               </div>
             )}
 
-            <ExampleQueries onLoadExample={handleLoadExample} />
-
-            <div className="flex gap-2">
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
               <Button
                 onClick={handleSendRequest}
                 disabled={loading}
-                className="flex-1"
+                size="lg"
+                className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80 font-semibold shadow-lg shadow-primary/20 transition-all "
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending Request...
                   </>
                 ) : (
                   <>
-                    <Play className="mr-2 h-4 w-4" />
                     Send Request
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleCopyCurl}>
-                <Copy className="h-4 w-4" />
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleCopyCurl}
+                className="h-12 px-4 border-border/50 bg-muted/30 transition-colors hover:bg-muted/50"
+              >
+                Copy cURL
               </Button>
             </div>
           </CardContent>
@@ -320,59 +299,73 @@ export function APIPlayground({ apiKeyPrefix, userId }: APIPlaygroundProps) {
           ...animations.fadeIn.transition,
           delay: 0.1,
         }}
+        className="flex flex-col"
       >
-        <Card>
-          <CardHeader>
+        <Card className="flex-1 overflow-hidden border-border/50 bg-gradient-to-b from-card to-card/80">
+          {/* Panel Header */}
+          <div className="relative border-b border-border/50 bg-gradient-to-r from-emerald-500/5 via-emerald-500/10 to-emerald-500/5 px-6 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Response</CardTitle>
-                <CardDescription>API response and metrics</CardDescription>
+              <div className="flex items-center gap-3">
+                <div>
+                  <h3 className="font-semibold text-foreground">Response</h3>
+                  <p className="text-sm text-muted-foreground">API response and metrics</p>
+                </div>
               </div>
               {response && (
                 <Badge
-                  variant={
-                    response.status >= 200 && response.status < 300
-                      ? "success"
-                      : response.status >= 400 && response.status < 500
-                      ? "warning"
-                      : "error"
-                  }
+                  variant={getStatusBadgeVariant(response.status) as any}
+                  className={`px-3 py-1 font-mono text-sm ${getStatusColor(response.status)}`}
                 >
                   {response.status}
                 </Badge>
               )}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          </div>
+
+          <CardContent className="flex flex-col gap-4 p-6">
             {response ? (
               <>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>Response Time: {response.time}ms</span>
-                  <span>Credits Used: {response.creditsUsed}</span>
+                {/* Response Metrics */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{response.time}ms</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">{response.creditsUsed} credit</span>
+                  </div>
                 </div>
-                <div className="rounded-lg border border-border bg-muted p-4">
-                  <pre className="overflow-auto text-xs font-mono">
-                    {JSON.stringify(response.data, null, 2)}
-                  </pre>
+
+                {/* Response Body */}
+                <div className="flex-1 overflow-hidden rounded-xl border border-border/50 bg-[#0d1117]">
+                  <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-4 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">Response Body</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(response.data, null, 2))
+                        toast.success("Response copied to clipboard")
+                      }}
+                      className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy />
+                    </Button>
+                  </div>
+                  <div className="max-h-[400px] overflow-auto p-4">
+                    <pre className="font-mono text-xs leading-relaxed text-emerald-400">
+                      {JSON.stringify(response.data, null, 2)}
+                    </pre>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      JSON.stringify(response.data, null, 2)
-                    )
-                    toast.success("Response copied to clipboard")
-                  }}
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy Response
-                </Button>
               </>
             ) : (
-              <div className="flex h-[300px] items-center justify-center rounded-lg border border-border bg-muted">
-                <p className="text-sm text-muted-foreground">
-                  Send a request to see the response here
+              /* Empty State */
+              <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border/50 bg-muted/20 py-16">
+                <h4 className="font-medium text-foreground">No Response Yet</h4>
+                <p className="mt-1 max-w-[200px] text-center text-sm text-muted-foreground">
+                  Configure your request and click Send to see the response here
                 </p>
               </div>
             )}

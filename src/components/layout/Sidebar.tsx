@@ -34,7 +34,7 @@ const navigation = [
   { name: "Support", href: "/support", icon: HelpCircle },
 ];
 
-export function Sidebar({user}: TopBarProps) {
+export function Sidebar({ user }: TopBarProps) {
   const pathname = usePathname();
   const { user: authUser } = useAuth();
 
@@ -98,13 +98,14 @@ export function Sidebar({user}: TopBarProps) {
             })}
           </div>
 
-          <Button variant="ghost" className="flex gap-2 hover:bg-muted">
-                <span className="hidden text-sm font-medium text-foreground md:block">
-                  {authUser.display_name}
-                </span>
-              </Button>
+          {/* <Button variant="ghost" className="flex gap-2 hover:bg-muted">
+            <span className="hidden text-sm font-medium text-foreground md:block">
+              {authUser.display_name ? authUser.display_name : "User"}
+          fahadkhann0204@gmail.com
+        </span>
+      </Button> */}
         </nav>
-      </div>
-    </aside>
+      </div >
+    </aside >
   );
 }

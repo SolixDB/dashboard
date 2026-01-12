@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { animations } from "@/config/animation.config"
 
 interface CreditsProgressProps {
@@ -10,18 +10,20 @@ interface CreditsProgressProps {
 }
 
 export function CreditsProgress({ total, used }: CreditsProgressProps) {
-  const percentage = (used / total) * 100
+  const percentage = Math.min((used / total) * 100, 100)
   const remaining = total - used
 
-  // Determine color based on usage
-  const getColor = () => {
-    if (percentage < 50) return "#10B981" // green
-    if (percentage < 80) return "#F59E0B" // yellow
-    return "#EF4444" // red
+  const getProgressColor = () => {
+    if (percentage < 50) return "bg-emerald-500"
+    if (percentage < 80) return "bg-amber-500"
+    return "bg-red-500"
   }
 
-  const circumference = 2 * Math.PI * 45 // radius = 45
-  const offset = circumference - (percentage / 100) * circumference
+  const getStatusText = () => {
+    if (percentage < 50) return "Healthy usage"
+    if (percentage < 80) return "Moderate usage"
+    return "High usage"
+  }
 
   return (
     <motion.div
@@ -32,57 +34,54 @@ export function CreditsProgress({ total, used }: CreditsProgressProps) {
         delay: 0.1,
       }}
     >
-      <Card>
-        <CardHeader>
-          <CardTitle>Credits Usage</CardTitle>
-          <CardDescription>Monthly credit consumption</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center">
-            <div className="relative h-32 w-32">
-              <svg className="h-32 w-32 -rotate-90 transform">
-                {/* Background circle */}
-                <circle
-                  cx="50%"
-                  cy="50%"
-                  r="45"
-                  fill="none"
-                  stroke="hsl(var(--muted))"
-                  strokeWidth="8"
-                />
-                {/* Progress circle */}
-                <motion.circle
-                  cx="50%"
-                  cy="50%"
-                  r="45"
-                  fill="none"
-                  stroke={getColor()}
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  initial={{ strokeDashoffset: circumference }}
-                  animate={{ strokeDashoffset: offset }}
-                  transition={{
-                    duration: 1,
-                    ease: "easeOut",
-                  }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{remaining.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">remaining</p>
-                </div>
-              </div>
+      <Card className="relative overflow-hidden border-border/50">
+        {/* Gradient accent */}
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500/20 to-emerald-600/20" />
+
+        <CardContent className="p-6">
+          {/* Header */}
+          <div className="mb-6">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Credits Usage</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold">{remaining.toLocaleString()}</span>
+              <span className="text-muted-foreground text-sm">remaining</span>
             </div>
           </div>
-          <div className="mt-4 text-center text-sm">
-            <p className="text-muted-foreground">
-              {used.toLocaleString()} / {total.toLocaleString()} credits used
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {percentage.toFixed(1)}% of monthly limit
-            </p>
+
+          {/* Progress Bar */}
+          <div className="space-y-3">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <motion.div
+                className={`h-full rounded-full ${getProgressColor()}`}
+                initial={{ width: 0 }}
+                animate={{ width: `${percentage}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </div>
+
+            {/* Stats Row */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {used.toLocaleString()} / {total.toLocaleString()} used
+              </span>
+              <span className="text-muted-foreground">
+                {percentage.toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Status
+              </span>
+              <span className={`text-sm font-medium ${percentage < 50 ? "text-emerald-500" :
+                  percentage < 80 ? "text-amber-500" : "text-red-500"
+                }`}>
+                {getStatusText()}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>

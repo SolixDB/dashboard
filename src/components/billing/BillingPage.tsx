@@ -20,16 +20,21 @@ export function BillingPage({ plan, credits }: BillingPageProps) {
       initial={animations.pageTransition.initial}
       animate={animations.pageTransition.animate}
       transition={animations.pageTransitionConfig}
-      className="space-y-6"
+      className="space-y-8"
     >
-      <div>
-        <h1 className="text-3xl font-bold">Billing & Plans</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your subscription and view usage details.
-        </p>
+      {/* Page Header */}
+      <div className="relative">
+        <div className="absolute -top-4 -left-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl" />
+        <div className="relative">
+          <h1 className="text-3xl font-bold tracking-tight">Billing & Plans</h1>
+          <p className="text-muted-foreground mt-2 max-w-lg">
+            Manage your subscription, track usage, and explore available plans.
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
         <PlanCard plan={plan} />
         <CreditsProgress
           total={credits.total_credits}
@@ -37,6 +42,7 @@ export function BillingPage({ plan, credits }: BillingPageProps) {
         />
       </div>
 
+      {/* Plan Comparison */}
       <PlanComparison currentPlan={plan} />
     </motion.div>
   )
