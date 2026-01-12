@@ -2,11 +2,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Brand colors - exact values */
+/* Brand colors */
 :root {
   --brand-primary: #1362FD;
   --brand-secondary: #5A91FF;
-  --brand-gradient: linear-gradient(135deg, #1362FD 0%, #5A91FF 100%);
   
   --primary-500: #1362FD;
   --primary-600: #0D4FD9;
@@ -14,73 +13,71 @@
   --primary-400: #5A91FF;
   --primary-300: #7BA9FF;
   
-  --accent-cyan: #06B6D4;
-  --accent-purple: #8B5CF6;
+  /* Dark navy-blue palette - easy on eyes, complements blue brand */
+  --background-base: #0B1120;
+  --background-elevated: #111827;
+  --background-card: #1E293B;
   
-  --background-base: #0A0A0B;
-  --background-elevated: #18181B;
-  --background-card: #1F1F23;
+  --border-subtle: #1E293B;
+  --border-default: #334155;
+  --border-strong: #475569;
   
-  --border-subtle: #27272A;
-  --border-default: #3F3F46;
-  --border-strong: #52525B;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
   
-  --text-primary: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-tertiary: #71717A;
-  
-  --success: #10B981;
+  --success: #22C55E;
   --warning: #F59E0B;
   --error: #EF4444;
   
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 }
 
 /* Dark mode as default */
 :root,
 .dark {
-  --background: #0A0A0B;
-  --foreground: #FAFAFA;
+  --background: #0B1120;
+  --foreground: #F8FAFC;
 
   --primary: #1362FD;
-  --primary-foreground: #FAFAFA;
+  --primary-foreground: #FFFFFF;
 
   --secondary: #5A91FF;
-  --secondary-foreground: #FAFAFA;
+  --secondary-foreground: #FFFFFF;
 
-  --accent: #5A91FF;
-  --accent-foreground: #FAFAFA;
+  --accent: #1362FD;
+  --accent-foreground: #FFFFFF;
 
-  --muted: #18181B;
-  --muted-foreground: #A1A1AA;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
 
-  --card: #1F1F23;
-  --card-foreground: #FAFAFA;
+  --card: #111827;
+  --card-foreground: #F8FAFC;
 
-  --popover: #1F1F23;
-  --popover-foreground: #FAFAFA;
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
 
-  --border: #27272A;
-  --input: #27272A;
+  --border: #1E293B;
+  --input: #1E293B;
   --ring: #1362FD;
 
   --destructive: #EF4444;
-  --destructive-foreground: #FAFAFA;
+  --destructive-foreground: #FFFFFF;
 
-  --sidebar: #18181B;
-  --sidebar-foreground: #FAFAFA;
-  --sidebar-accent: #5A91FF;
-  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar: #0B1120;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-accent: rgba(19, 98, 253, 0.15);
+  --sidebar-accent-foreground: #1362FD;
   --sidebar-primary: #1362FD;
-  --sidebar-primary-foreground: #FAFAFA;
-  --sidebar-border: #27272A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-border: #1E293B;
   --sidebar-ring: #1362FD;
 
   --chart-1: #1362FD;
   --chart-2: #5A91FF;
-  --chart-3: #06B6D4;
-  --chart-4: #8B5CF6;
-  --chart-5: #10B981;
+  --chart-3: #22C55E;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
 }
 
 @theme inline {
@@ -120,6 +117,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 @layer base {
@@ -133,46 +132,25 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
   }
 }
 
 @layer utilities {
-  .bg-brand-gradient {
-    background: linear-gradient(135deg, #1362FD 0%, #5A91FF 100%);
+  .text-primary-brand {
+    color: #1362FD;
   }
   
-  .text-brand-gradient {
-    background: linear-gradient(135deg, #1362FD 0%, #5A91FF 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .bg-grid-pattern {
-    background-image: 
-      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
+  .bg-primary-brand {
+    background-color: #1362FD;
   }
 
-  @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
-  }
-
-  .animate-shimmer {
-    animation: shimmer 2s linear infinite;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 100%
-    );
-    background-size: 1000px 100%;
+  .border-primary-brand {
+    border-color: #1362FD;
   }
 }
