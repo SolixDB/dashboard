@@ -179,8 +179,7 @@ export function ExampleQueries({ onLoadExample }: ExampleQueriesProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full">
-          <BookOpen className="mr-2 h-4 w-4" />
+        <Button variant="outline" size="sm" className="w-fit bg-primary/40 text-primary-foreground">
           Load Example Query
         </Button>
       </PopoverTrigger>

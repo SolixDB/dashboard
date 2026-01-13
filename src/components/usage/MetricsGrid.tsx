@@ -14,6 +14,16 @@ interface MetricsGridProps {
   timeRange: string
 }
 
+import {
+  Activity,
+  CreditCard,
+  Zap,
+  AlertCircle,
+  Globe,
+  Clock
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+
 export function MetricsGrid({ timeRange }: MetricsGridProps) {
   const { user } = useAuth()
 
@@ -44,38 +54,28 @@ export function MetricsGrid({ timeRange }: MetricsGridProps) {
   })
 
   const metrics = useMemo(() => {
-    if (!usageData || usageData.length === 0) {
-      return [
-        { label: "Total API Calls", value: "0", change: null },
-        { label: "Total Credits Used", value: "0", change: null },
-        { label: "Avg Response Time", value: "0ms", change: null },
-        { label: "Error Rate", value: "0%", change: null },
-        { label: "Most Used Endpoint", value: "N/A", change: null },
-        { label: "Peak Usage Hour", value: "N/A", change: null },
-      ]
-    }
-
-    const totalCalls = usageData.length
-    const totalCredits = usageData.reduce((sum, log) => sum + (log.credits_used || 0), 0)
-    const avgResponseTime = Math.round(
-      usageData.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) / totalCalls
-    )
-    const errorCount = usageData.filter(log => log.status_code >= 400).length
-    const errorRate = (errorCount / totalCalls) * 100
+    const totalCalls = usageData?.length || 0
+    const totalCredits = usageData?.reduce((sum, log) => sum + (log.credits_used || 0), 0) || 0
+    const avgResponseTime = totalCalls > 0
+      ? Math.round(usageData?.reduce((sum, log) => sum + (log.response_time_ms || 0), 0)! / totalCalls)
+      : 0
+    const errorCount = usageData?.filter(log => log.status_code >= 400).length || 0
+    const errorRate = totalCalls > 0 ? (errorCount / totalCalls) * 100 : 0
 
     // Most used endpoint
-    const endpointCounts = usageData.reduce((acc, log) => {
+    const endpointCounts = usageData?.reduce((acc, log) => {
       acc[log.endpoint] = (acc[log.endpoint] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {} as Record<string, number>) || {}
     const mostUsedEndpoint = Object.entries(endpointCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A"
 
     // Peak usage hour
-    const hourCounts = usageData.reduce((acc, log) => {
+    const hourCounts = usageData?.reduce((acc, log) => {
       const hour = new Date(log.timestamp).getHours()
       acc[hour] = (acc[hour] || 0) + 1
       return acc
-    }, {} as Record<number, number>)
+    }, {} as Record<number, number>) || {}
+
     const peakHourEntry = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0]
     const peakHour = peakHourEntry ? Number(peakHourEntry[0]) : undefined
     const peakHourFormatted = peakHour !== undefined
@@ -83,12 +83,48 @@ export function MetricsGrid({ timeRange }: MetricsGridProps) {
       : "N/A"
 
     return [
-      { label: "Total API Calls", value: totalCalls.toLocaleString(), change: null },
-      { label: "Total Credits Used", value: totalCredits.toLocaleString(), change: null },
-      { label: "Avg Response Time", value: `${avgResponseTime}ms`, change: null },
-      { label: "Error Rate", value: `${errorRate.toFixed(1)}%`, change: null },
-      { label: "Most Used Endpoint", value: mostUsedEndpoint, change: null },
-      { label: "Peak Usage Hour", value: peakHourFormatted, change: null },
+      {
+        label: "Total API Calls",
+        value: totalCalls.toLocaleString(),
+        icon: Activity,
+        color: "text-blue-500",
+        suffix: "requests"
+      },
+      {
+        label: "Total Credits Used",
+        value: totalCredits.toLocaleString(),
+        icon: CreditCard,
+        color: "text-purple-500",
+        suffix: "credits"
+      },
+      {
+        label: "Avg Response Time",
+        value: `${avgResponseTime}ms`,
+        icon: Zap,
+        color: "text-amber-500",
+        suffix: "latency"
+      },
+      {
+        label: "Error Rate",
+        value: `${errorRate.toFixed(1)}%`,
+        icon: AlertCircle,
+        color: "text-red-500",
+        suffix: "failure rate"
+      },
+      {
+        label: "Most Used Endpoint",
+        value: mostUsedEndpoint === "N/A" ? "N/A" : mostUsedEndpoint.split('/').pop() || mostUsedEndpoint,
+        icon: Globe,
+        color: "text-emerald-500",
+        suffix: "top route"
+      },
+      {
+        label: "Peak Usage Hour",
+        value: peakHourFormatted,
+        icon: Clock,
+        color: "text-sky-500",
+        suffix: "busy period"
+      },
     ]
   }, [usageData])
 
@@ -96,15 +132,12 @@ export function MetricsGrid({ timeRange }: MetricsGridProps) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="h-20 animate-pulse bg-muted" />
-            </CardContent>
-          </Card>
+          <Card key={i} className="border-border bg-card ring-1 ring-white/5 h-32 animate-pulse" />
         ))}
       </div>
     )
   }
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {metrics.map((metric, index) => (
@@ -117,16 +150,20 @@ export function MetricsGrid({ timeRange }: MetricsGridProps) {
             delay: index * 0.05,
           }}
         >
-          <Card>
+          <Card className="relative overflow-hidden border-border bg-card ring-1 ring-white/5">
             <CardContent className="p-6">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   {metric.label}
                 </p>
-                <p className="text-2xl font-bold">{metric.value}</p>
-                {metric.change && (
-                  <p className="text-xs text-green-400">{metric.change}</p>
-                )}
+              </div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-2xl font-bold tracking-tight text-foreground">
+                  {metric.value}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                  {metric.suffix}
+                </span>
               </div>
             </CardContent>
           </Card>

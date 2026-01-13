@@ -16,6 +16,12 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts"
+import {
+  Activity,
+  CreditCard,
+  Globe,
+  AlertCircle
+} from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { animations } from "@/config/animation.config"
 import { useQuery } from "@tanstack/react-query"
@@ -155,37 +161,66 @@ export function UsageCharts({ timeRange }: UsageChartsProps) {
         animate={animations.fadeIn.animate}
         transition={animations.fadeIn.transition}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>API Calls Over Time</CardTitle>
-            <CardDescription>Daily API call volume</CardDescription>
+        <Card className="border-border bg-card shadow-lg shadow-black/20 ring-1 ring-white/5 rounded">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-sm font-bold text-foreground">API Calls Volume</CardTitle>
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Success & traffic over time</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={apiCallsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={apiCallsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="callsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke="var(--border)" vertical={false} opacity={0.4} />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  stroke="hsl(var(--border))"
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  tickLine={false}
+                  axisLine={false}
+                  dy={10}
                 />
                 <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  stroke="hsl(var(--border))"
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={50}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
+                  cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-sm border border-border bg-card p-3 shadow-xl backdrop-blur-md">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {label}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-primary" />
+                            <p className="text-sm font-bold text-foreground">
+                              {Number(payload[0].value || 0).toLocaleString()} calls
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="calls"
-                  stroke="#1362FD"
-                  strokeWidth={2}
-                  dot={{ fill: "#1362FD", r: 4 }}
+                  stroke="var(--primary)"
+                  strokeWidth={2.5}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0, fill: 'var(--primary)' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -197,37 +232,56 @@ export function UsageCharts({ timeRange }: UsageChartsProps) {
       <motion.div
         initial={animations.fadeIn.initial}
         animate={animations.fadeIn.animate}
-        transition={{
-          ...animations.fadeIn.transition,
-          delay: 0.1,
-        }}
+        transition={{ ...animations.fadeIn.transition, delay: 0.1 }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Credits Consumption</CardTitle>
-            <CardDescription>Daily credits used</CardDescription>
+        <Card className="border-border bg-card shadow-lg shadow-black/20 ring-1 ring-white/5 rounded">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-sm font-bold text-foreground">Credits Consumption</CardTitle>
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Resource usage monitoring</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={creditsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={creditsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="4 4" stroke="var(--border)" vertical={false} opacity={0.4} />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  stroke="hsl(var(--border))"
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  tickLine={false}
+                  axisLine={false}
+                  dy={10}
                 />
                 <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  stroke="hsl(var(--border))"
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={50}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
+                  cursor={{ fill: 'var(--primary)', opacity: 0.1 }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-sm border border-border bg-card p-3 shadow-xl backdrop-blur-md">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {label}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-purple-500" />
+                            <p className="text-sm font-bold text-foreground">
+                              {Number(payload[0].value || 0).toLocaleString()} credits
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
                 />
-                <Bar dataKey="credits" fill="#1362FD" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="credits" fill="var(--primary)" radius={[2, 2, 0, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -238,39 +292,58 @@ export function UsageCharts({ timeRange }: UsageChartsProps) {
       <motion.div
         initial={animations.fadeIn.initial}
         animate={animations.fadeIn.animate}
-        transition={{
-          ...animations.fadeIn.transition,
-          delay: 0.2,
-        }}
+        transition={{ ...animations.fadeIn.transition, delay: 0.2 }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Endpoint Distribution</CardTitle>
-            <CardDescription>Top 5 endpoints by usage</CardDescription>
+        <Card className="border-border bg-card shadow-lg shadow-black/20 ring-1 ring-white/5 rounded">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-sm font-bold text-foreground">Endpoint Distribution</CardTitle>
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Top performing routes</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
                   data={endpointData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  innerRadius={60}
                   outerRadius={80}
-                  fill="#8884d8"
+                  paddingAngle={5}
                   dataKey="value"
                 >
                   {endpointData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-sm border border-border bg-card p-3 shadow-xl backdrop-blur-md">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {payload[0].name}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full border border-white/20" style={{ backgroundColor: String(payload[0].payload.fill || '#000') }} />
+                            <p className="text-sm font-bold text-foreground">
+                              {Number(payload[0].value || 0).toLocaleString()} hits
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  formatter={(value) => <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{value.split('/').pop() || value}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -278,43 +351,49 @@ export function UsageCharts({ timeRange }: UsageChartsProps) {
         </Card>
       </motion.div>
 
-      {/* Status Codes */}
+      {/* Traffic Quality */}
       <motion.div
         initial={animations.fadeIn.initial}
         animate={animations.fadeIn.animate}
-        transition={{
-          ...animations.fadeIn.transition,
-          delay: 0.3,
-        }}
+        transition={{ ...animations.fadeIn.transition, delay: 0.3 }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Status Codes</CardTitle>
-            <CardDescription>Response status breakdown</CardDescription>
+        <Card className="border-border bg-card shadow-lg shadow-black/20 ring-1 ring-white/5 rounded">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-sm font-bold text-foreground">Traffic Quality</CardTitle>
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">Status code breakdown (%)</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={statusCodeData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  type="number" 
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  stroke="hsl(var(--border))"
-                />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  stroke="hsl(var(--border))"
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={statusCodeData} layout="vertical" margin={{ top: 10, right: 30, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="4 4" stroke="var(--border)" horizontal={false} opacity={0.4} />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 700 }}
+                  tickLine={false}
+                  axisLine={false}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
+                  cursor={{ fill: 'var(--primary)', opacity: 0.05 }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-sm border border-border bg-card p-3 shadow-xl backdrop-blur-md">
+                          <p className="text-sm font-bold text-foreground">
+                            {payload[0].name}: {Number(payload[0].value || 0).toFixed(1)}%
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
                 />
-                <Bar dataKey="value" fill="#1362FD" radius={[0, 8, 8, 0]}>
+                <Bar dataKey="value" radius={[0, 2, 2, 0]} barSize={32}>
                   {statusCodeData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
