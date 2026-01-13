@@ -46,17 +46,21 @@ export default function UsagePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen space-y-10 pb-12">
       {/* Page Header */}
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold text-foreground">Usage & Analytics</h1>
-        <p className="text-sm text-muted-foreground">
-          Monitor your API usage, track credits, and analyze performance metrics.
+      <header className="space-y-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Usage & Analytics
+        </h1>
+        <p className="text-sm font-medium text-muted-foreground">
+          Monitor your API usage, track credits, and analyze performance metrics in real-time.
         </p>
       </header>
 
       {/* Usage Analytics */}
-      <UsageAnalytics userId={userId} />
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <UsageAnalytics userId={userId} />
+      </section>
     </div>
   );
 }

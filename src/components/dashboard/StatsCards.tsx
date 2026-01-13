@@ -1,11 +1,13 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Activity, CheckCircle2, Zap, CreditCard } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useBilling } from "@/lib/hooks/use-billing";
 import { createClientSupabase } from "@/lib/supabase/client";
-import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const supabase = createClientSupabase();
 
@@ -43,9 +45,9 @@ export function StatsCards() {
     const avgResponseTime =
       todayUsage && todayUsage.length > 0
         ? Math.round(
-            todayUsage.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) /
-              todayUsage.length
-          )
+          todayUsage.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) /
+          todayUsage.length
+        )
         : 0;
 
     const successCount =
@@ -62,21 +64,29 @@ export function StatsCards() {
         label: "API Calls Today",
         value: todayCalls.toLocaleString(),
         suffix: "requests",
+        icon: Activity,
+        color: "text-blue-500",
       },
       {
         label: "Success Rate",
         value: successRate.toFixed(0),
         suffix: "%",
+        icon: CheckCircle2,
+        color: "text-emerald-500",
       },
       {
         label: "Avg Response",
         value: avgResponseTime.toLocaleString(),
         suffix: "ms",
+        icon: Zap,
+        color: "text-amber-500",
       },
       {
         label: "Credits Left",
         value: remaining.toLocaleString(),
         suffix: `/ ${totalCredits.toLocaleString()}`,
+        icon: CreditCard,
+        color: "text-purple-500",
       },
     ];
   }, [billing, todayUsage]);
@@ -84,16 +94,20 @@ export function StatsCards() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
-        <Card key={stat.label} className="border-border bg-card">
-          <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {stat.label}
-            </p>
-            <div className="mt-2 flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-semibold text-foreground">
+        <Card key={stat.label} className="relative overflow-hidden border-border bg-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {stat.label}
+              </p>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-3xl font-bold tracking-tight text-foreground">
                 {stat.value}
               </span>
-              <span className="text-sm text-muted-foreground">{stat.suffix}</span>
+              <span className="text-xs font-semibold text-muted-foreground/70">
+                {stat.suffix}
+              </span>
             </div>
           </CardContent>
         </Card>

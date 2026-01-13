@@ -91,32 +91,34 @@ export function UsageChart() {
   const total = chartData.reduce((sum, d) => sum + d[chartType], 0);
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="border-border bg-card shadow-lg shadow-black/20 ring-1 ring-white/5">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h3 className="text-sm font-medium text-foreground">Activity</h3>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+            <h3 className="text-sm font-bold text-foreground">Usage Activity</h3>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">Statistics for the last 30 days</p>
           </div>
           <div className="text-right">
-            <p className="font-mono text-2xl font-semibold text-foreground">
+            <p className="text-3xl font-bold tracking-tight text-foreground">
               {total.toLocaleString()}
             </p>
-            <p className="text-xs text-muted-foreground">total {chartType}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+              total {chartType}
+            </p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 rounded-md border border-border bg-muted/50 p-1">
+        {/* Tabs - Segmented Control */}
+        <div className="flex w-fit gap-1 rounded border border-border bg-background/50 p-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setChartType(tab.id)}
               className={cn(
-                "flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors",
+                "rounded-sm px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all duration-200",
                 chartType === tab.id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               {tab.label}
@@ -125,55 +127,69 @@ export function UsageChart() {
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="pt-2">
         {isLoading ? (
-          <div className="flex h-[240px] items-center justify-center">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="flex h-[280px] items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={chartData}>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1362FD" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="#1362FD" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
               <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
+                strokeDasharray="4 4"
+                stroke="var(--border)"
                 vertical={false}
+                opacity={0.4}
               />
               <XAxis
                 dataKey="date"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
                 tickLine={false}
                 axisLine={false}
+                dy={10}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
                 tickLine={false}
                 axisLine={false}
-                width={40}
+                width={50}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontFamily: "var(--font-mono)",
+                cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="rounded-lg border border-border bg-card p-3 shadow-xl backdrop-blur-md">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          {label}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-primary" />
+                          <p className="text-sm font-bold text-foreground">
+                            {payload[0].value?.toLocaleString() || 0} {chartType}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
                 }}
-                labelStyle={{ color: "hsl(var(--muted-foreground))", marginBottom: "4px" }}
-                itemStyle={{ color: "#1362FD" }}
               />
               <Area
                 type="monotone"
                 dataKey={chartType}
-                stroke="#1362FD"
+                stroke="var(--primary)"
                 fill="url(#chartGradient)"
-                strokeWidth={1.5}
+                strokeWidth={2.5}
+                activeDot={{ r: 4, strokeWidth: 0, fill: 'var(--primary)' }}
+                animationDuration={1000}
               />
             </AreaChart>
           </ResponsiveContainer>

@@ -19,16 +19,20 @@ export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
   ]
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5 rounded border border-border bg-background/50 p-1">
       {ranges.map((range) => (
-        <Button
+        <button
           key={range.value}
-          variant={value === range.value ? "default" : "outline"}
-          size="sm"
           onClick={() => onChange(range.value)}
+          className={cn(
+            "rounded-sm px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-200",
+            value === range.value
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
         >
           {range.label}
-        </Button>
+        </button>
       ))}
     </div>
   )

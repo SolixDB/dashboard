@@ -29,12 +29,15 @@ export function UsageAnalytics({ userId }: UsageAnalyticsProps) {
         initial={animations.fadeIn.initial}
         animate={animations.fadeIn.animate}
         transition={animations.fadeIn.transition}
-        className="flex items-center justify-between"
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export as CSV
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          className="h-10 border-border bg-card/50 px-4 font-bold uppercase tracking-widest text-muted-foreground transition-all hover:border-primary/50 hover:bg-card hover:text-primary rounded-sm"
+        >
+          Export CSV
         </Button>
       </motion.div>
 

@@ -61,33 +61,36 @@ export default function DashboardPage() {
   const plan = userProfile.plan || "free";
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen space-y-10 pb-12">
       {/* Page Header */}
-      <header className="flex w-full items-center justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-foreground">
-              Good Morning, {displayName}
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Welcome back, {displayName}
             </h1>
-            <span className="rounded border border-border px-2 py-0.5 font-mono text-xs text-muted-foreground">
-              {plan.toUpperCase()}
-            </span>
+            <div className="flex items-center gap-1.5 rounded-sm bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary ring-1 ring-primary/20">
+              <span className="h-1 w-1 rounded-full bg-primary animate-pulse" />
+              {plan}
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Here is what SolixDB captured while you were working today.
+          <p className="text-sm font-medium text-muted-foreground">
+            Monitor and manage your database activity in real-time.
           </p>
         </div>
 
-        <APIKeyDialog userId={userProfile.id} />
+        <div className="flex items-center gap-3">
+          <APIKeyDialog userId={userProfile.id} />
+        </div>
       </header>
 
       {/* Stats Overview */}
-      <section>
+      <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         <StatsCards />
       </section>
 
       {/* Charts Section */}
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 lg:grid-cols-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <UsageChart />
         <RecentActivity />
       </section>

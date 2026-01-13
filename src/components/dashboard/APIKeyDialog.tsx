@@ -11,6 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { formatDistanceToNow } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { Activity } from "lucide-react";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 import { createClient } from "@supabase/supabase-js";
 import { RegenerateModal } from "@/components/keys/RegenerateModal";
@@ -43,7 +47,7 @@ export function APIKeyDialog({ userId }: APIKeyDialogProps) {
 
   const loadAPIKey = async () => {
     if (!userId) return;
-    
+
     setLoading(true);
     try {
       const { data: keyData } = await supabase
@@ -90,7 +94,7 @@ export function APIKeyDialog({ userId }: APIKeyDialogProps) {
 
   const handleCopy = async () => {
     if (!apiKey) return;
-    
+
     try {
       const textToCopy = apiKey.fullKey || `${apiKey.key_prefix}...${apiKey.key_suffix}`;
       await navigator.clipboard.writeText(textToCopy);
@@ -111,94 +115,101 @@ export function APIKeyDialog({ userId }: APIKeyDialogProps) {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 border-border text-muted-foreground hover:text-foreground"
+            className="border-border bg-card/50 px-4 font-bold uppercase tracking-widest text-muted-foreground transition-all hover:border-primary/50 hover:bg-card hover:text-primary"
           >
-            <Key className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">API Key</span>
+            <span className="sm:hidden">Key</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">API Key</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Use this key to authenticate your API requests.
+        <DialogContent className="sm:max-w-md bg-card border-border overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-primary/50 via-primary to-primary/50" />
+          <DialogHeader className="pt-4">
+            <DialogTitle className="text-xl font-bold text-foreground">
+              API Authentication
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              These keys allow other apps to access your SolixDB data. Keep them secret!
             </DialogDescription>
           </DialogHeader>
 
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : apiKey ? (
-            <div className="space-y-4">
+            <div className="space-y-6 py-2">
               {/* API Key Display */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Your Key
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Your Secret Key
                   </label>
                   <button
                     onClick={() => setShowRegenerateModal(true)}
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:opacity-80 transition-opacity"
                   >
-                    <RotateCcw className="h-3 w-3" />
                     Regenerate
                   </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md border border-border bg-background px-3 py-2.5 font-mono text-xs text-foreground break-all">
+                <div className="flex items-center gap-2 p-1 rounded border border-border bg-muted/30">
+                  <div className="flex-1 px-3 py-2 font-mono text-xs text-foreground break-all select-all">
                     {keyDisplay}
                   </div>
                   <Button
-                    variant="outline"
-                    size="icon"
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCopy}
-                    className="shrink-0 h-9 w-9"
+                    className="shrink-0 px-2 h-8 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
                   >
-                    {copied ? (
-                      <Check className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
+                    {copied ? "Copied" : "Copy"}
                   </Button>
                 </div>
               </div>
 
               {/* Usage Example */}
               {apiKey.fullKey && (
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Usage
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Implementation Guide
                   </label>
-                  <div className="rounded-md border border-border bg-background p-3 space-y-2">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">Query parameter:</p>
-                      <code className="font-mono text-[11px] text-foreground break-all">
-                        ?API_KEY={apiKey.fullKey}
-                      </code>
+                  <div className="rounded border border-border bg-background/50 divide-y divide-border">
+                    <div className="p-4 space-y-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Query Parameter</p>
+                      <div className="bg-muted/50 rounded-sm p-3 border border-border/50">
+                        <code className="font-mono text-[11px] text-primary break-all">
+                          ?API_KEY={apiKey.fullKey}
+                        </code>
+                      </div>
                     </div>
-                    <div className="border-t border-border pt-2">
-                      <p className="text-[10px] text-muted-foreground mb-1">Header:</p>
-                      <code className="font-mono text-[11px] text-foreground">
-                        x-api-key: {apiKey.fullKey}
-                      </code>
+                    <div className="p-4 space-y-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">HTTP Header</p>
+                      <div className="bg-muted/50 rounded-sm p-3 border border-border/50">
+                        <code className="font-mono text-[11px] text-primary">
+                          x-api-key: {apiKey.fullKey}
+                        </code>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Key Info */}
-              <div className="flex items-center justify-between pt-2 border-t border-border text-xs text-muted-foreground">
-                <span>Created {new Date(apiKey.created_at).toLocaleDateString()}</span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Active
-                </span>
+              <div className="flex items-center justify-between px-1 text-[10px] font-medium text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <span>Key is active and ready</span>
+                </div>
+                <span>Issued {new Date(apiKey.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
             </div>
           ) : (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              No API key found. Please contact support.
+            <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
+                <Key className="h-6 w-6 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm text-muted-foreground max-w-[200px]">
+                No API key found for this account.
+              </p>
             </div>
           )}
         </DialogContent>
