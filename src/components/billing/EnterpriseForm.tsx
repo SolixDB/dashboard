@@ -56,7 +56,7 @@ export function EnterpriseForm({ open, onOpenChange }: EnterpriseFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent asChild className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px]">
         <motion.div
           initial={animations.modal.initial}
           animate={animations.modal.animate}

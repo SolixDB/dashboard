@@ -26,12 +26,6 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("user_id", userId)
 
-    console.log('=== ALL CREDITS FOR USER ===')
-    console.log('User ID:', userId)
-    console.log('All records:', JSON.stringify(allCredits, null, 2))
-    console.log('Looking for month:', monthStr)
-    console.log('============================')
-
     // Try to find matching month record
     let credits = null
     if (allCredits && allCredits.length > 0) {
@@ -58,20 +52,6 @@ export async function POST(request: NextRequest) {
         console.log('Using most recent record:', credits.month)
       }
     }
-
-    // Log the credits data for debugging
-    console.log('=== MONTHLY CREDITS DEBUG ===')
-    console.log('User ID:', userId)
-    console.log('Month:', monthStr)
-    if (credits) {
-      console.log('Total Credits:', credits.total_credits)
-      console.log('Used Credits:', credits.used_credits)
-      console.log('Remaining:', credits.total_credits - credits.used_credits)
-      console.log('Full row:', JSON.stringify(credits, null, 2))
-    } else {
-      console.log('No credits record found - will create/update')
-    }
-    console.log('============================')
 
     // If record exists, check if month needs updating
     if (credits) {

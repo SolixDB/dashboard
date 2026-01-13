@@ -51,10 +51,7 @@ export function RegenerateModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        asChild
-        className="sm:max-w-[425px]"
-      >
+      <DialogContent className="sm:max-w-[425px]">
         <motion.div
           initial={animations.modal.initial}
           animate={animations.modal.animate}
